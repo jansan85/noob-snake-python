@@ -1,0 +1,9 @@
+[tool.poetry]
+name = "battlesnake_daSCHNAKE"
+version = "1.0.0"
+description = "A simple Battlesnake (first coding steps) written in Python based on battlesnake.com Quickstart_Guide Template https://docs.battlesnake.com/guides/getting-started"
+authors = ["jansan85"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+Flask = "^2.0.1"
