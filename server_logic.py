@@ -112,21 +112,21 @@ def change_chance_of_movement(move:[str], chance_value:[int], possible_moves_cha
     print(f" Increase {move} by {chance_value} ")
   return possible_moves_chances
 
-#Get movement direction based on near food
-def get_move_to_near_food(my_head: Dict[str, int], food_coord: [str, int]) -> str:
+#Get movement direction based on near food and a ranking how far it is away - ranking by chance 100 - distance
+def get_move_to_near_food(my_head: Dict[str, int], food_coord: [str, int]) -> dict:
   if (food_coord["x"] < my_head["x"]) and ((food_coord["y"]) == my_head["y"]):
       print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FOOD is left")
-      return "left"
+      return ({"left":(100-(my_head["x"] - food_coord["x"]))})
   elif (food_coord["x"] > my_head["x"]) and ((food_coord["y"]) == my_head["y"]):
       print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FOOD is right")
-      return "right"
+      return ({"right": (100-(food_coord["x"] - my_head["x"]))})
   elif (food_coord["x"] == my_head["x"]) and ((food_coord["y"]) > my_head["y"]):
       print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FOOD is up")
-      return "up"
+      return ({"up": (100-(food_coord["y"]) - my_head["y"])})
   elif (food_coord["x"] == my_head["x"]) and ((food_coord["y"]) < my_head["y"]):
       print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FOOD is down")
-      return "down"
-  return "false"
+      return ({"down": (100-(my_head["y"]-food_coord["y"]))})
+  return ({"false": 0})
 
 def choose_move(data: dict) -> str:
     """
@@ -196,10 +196,14 @@ def choose_move(data: dict) -> str:
 
       # Go to food if it is horizontalyl or vertically 
       for food_coord in food: #take all food coordinates
-        improve_move = get_move_to_near_food(my_head, food_coord) #check if it is directly vertically or horizontally
-        if improve_move != "false":
-          possible_moves_chances = change_chance_of_movement(improve_move, 10, possible_moves_chances) #if yes increase movement direction chance
-        
+        improve_move_dic = get_move_to_near_food(my_head, food_coord) #check if it is directly vertically or horizontally and get distance
+        #print(f"improve {improve_move_dic} ")
+
+        # take over direction and distance in possible moves
+        for key in improve_move_dic:
+          if key != "false":
+            possible_moves_chances = change_chance_of_movement(key, improve_move_dic[key], possible_moves_chances)      
+       
       
       """get the best move option from dict with moves and chances"""
       bestmove = get_move_with_highest_chance(possible_moves_chances) 
