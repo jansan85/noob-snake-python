@@ -30,16 +30,16 @@ def avoid_my_body(my_head: Dict[str, int], my_body: List[dict], possible_moves: 
 def avoid_other_snakes(my_head: Dict[str, int], other_snake_body: List[dict], possible_moves: List[str]) -> List[str]:
   for body_part in other_snake_body:
     if (body_part["x"] == my_head["x"]) and ((body_part["y"]+1) == my_head["y"]):
-      print("body  - - - Dont go down")
+      print("other Snake  - - - Dont go down")
       if "down" in possible_moves: possible_moves.remove("down")
     if (body_part["x"] == my_head["x"]) and ((body_part["y"]-1) == my_head["y"]):
-      print("body  - - - Dont go up")
+      print("other Snake  - - - Dont go up")
       if "up" in possible_moves: possible_moves.remove("up")
     if (body_part["y"] == my_head["y"]) and ((body_part["x"]+1) == my_head["x"]):
-      print("body  - - - Dont go left")
+      print("other Snake  - - - Dont go left")
       if "left" in possible_moves: possible_moves.remove("left")
     if (body_part["y"] == my_head["y"]) and ((body_part["x"]-1) == my_head["x"]):
-      print("body  - - - Dont go right")
+      print("other Snake  - - - Dont go right")
       if "right" in possible_moves: possible_moves.remove("right")
   return possible_moves
 
@@ -93,10 +93,40 @@ def direct_move_to_eat(my_head: Dict[str, int], food_coord: [str, int]) -> str:
       print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PRIO - eat right")
       return "right"
     else: return "false"
-    
 
-    
+"""Improving randomness"""
+#Function to get movement direction out of dictionary having all possible moves witch chances
+def get_move_with_highest_chance(possible_moves_chances:[dict]) -> str:
+  bestmove_chance = 0
+  for key in possible_moves_chances:
+    if (possible_moves_chances[key] > bestmove_chance or bestmove_chance == 0):
+      bestmove_chance = possible_moves_chances[key]
+      bestmove = key
+      print(f" {bestmove} mit Chance {possible_moves_chances[key]} ")
+  return bestmove
 
+#Function to manipulate the chance of a movement direction in a dict move / chance
+def change_chance_of_movement(move:[str], chance_value:[int], possible_moves_chances:[dict]) -> dict:
+  if move in possible_moves_chances: 
+    possible_moves_chances[move] = (possible_moves_chances[move] + chance_value)
+    print(f" Increase {move} by {chance_value} ")
+  return possible_moves_chances
+
+#Get movement direction based on near food
+def get_move_to_near_food(my_head: Dict[str, int], food_coord: [str, int]) -> str:
+  if (food_coord["x"] < my_head["x"]) and ((food_coord["y"]) == my_head["y"]):
+      print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FOOD is left")
+      return "left"
+  elif (food_coord["x"] > my_head["x"]) and ((food_coord["y"]) == my_head["y"]):
+      print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FOOD is right")
+      return "right"
+  elif (food_coord["x"] == my_head["x"]) and ((food_coord["y"]) > my_head["y"]):
+      print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FOOD is up")
+      return "up"
+  elif (food_coord["x"] == my_head["x"]) and ((food_coord["y"]) < my_head["y"]):
+      print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FOOD is down")
+      return "down"
+  return "false"
 
 def choose_move(data: dict) -> str:
     """
@@ -117,7 +147,7 @@ def choose_move(data: dict) -> str:
     board_width = data["board"]["width"] #int board width
     #print (board_width)
     food = data["board"]["food"] #A list of x/y coordinate dictionaries like [ {"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0} ] 
-    #snakes = data["snakes"]
+    snakes = data["board"]["snakes"]
     
        
     # TODO: uncomment the lines below so you can see what this data looks like in your output!
@@ -127,6 +157,7 @@ def choose_move(data: dict) -> str:
     # print(f"My Battlesnakes body this turn is: {my_body}")
 
     possible_moves = ["up", "down", "left", "right"]
+    
 
     # Don't allow your Battlesnake to move back in on it's own neck
     possible_moves = avoid_my_neck(my_head, my_body, possible_moves)
@@ -138,21 +169,44 @@ def choose_move(data: dict) -> str:
     possible_moves = avoid_my_body(my_head, my_body, possible_moves)
 
     # Don't bite other snakes
-    #other_snake_body = 
-   # possible_moves = avoid_other_snakes(my_head, other_snake_body, possible_moves)
+    for snake in snakes:
+      if (snake["name"] != "daSchnake"):
+          possible_moves = avoid_other_snakes(my_head, snake["body"], possible_moves)
+   
     special_move = "false"
     # check if there is a move directly to food
     for food_coord in food:
       prio_move = direct_move_to_eat(my_head, food_coord)
       if prio_move != "false":
         special_move = "true"
+        #if yes - eat it
         move = prio_move
         print(f"{data['game']['id']} PRIOMOVE {prio_move}")
   
     if special_move == "true":
       print(f"!!!!!  {data['game']['id']} Do the PRIO Move: {prio_move}")
     else:
-      move = random.choice(possible_moves)
+      #create dict with chance per possible move from left possible moves
+      possible_moves_chances = dict() #create the dict 
+      for str_move in possible_moves:
+        possible_moves_chances[str_move] = 0 #create all with chance 0
+        print(f" {str_move} added to move/chance list")
+      
+      print(f" {possible_moves_chances} ")
+
+      # Go to food if it is horizontalyl or vertically 
+      for food_coord in food: #take all food coordinates
+        improve_move = get_move_to_near_food(my_head, food_coord) #check if it is directly vertically or horizontally
+        if improve_move != "false":
+          possible_moves_chances = change_chance_of_movement(improve_move, 10, possible_moves_chances) #if yes increase movement direction chance
+        
+      
+      """get the best move option from dict with moves and chances"""
+      bestmove = get_move_with_highest_chance(possible_moves_chances) 
+      print(f"Selected {bestmove} as best move")
+      
+      move = bestmove
+      #move = random.choice(possible_moves)
       print(f"{data['game']['id']} MOVE {data['turn']}: {move} picked from all valid options in {possible_moves}")
     
     # TODO: Explore new strategies for picking a move that are better than random
