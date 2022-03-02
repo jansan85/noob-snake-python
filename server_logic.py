@@ -285,19 +285,26 @@ def choose_move(data: dict) -> str:
           
           for possible_move in possible_moves_chances: # for all possible moves
             possible_coord_dic = get_coord_for_movedirection(my_head, possible_move) # get every target coord if you do the move
-            envire_pos_coords_list = []
-            envire_pos_coords_list = get_list_environmental_coords_for_coord(possible_coord_dic, board_height, board_width) # and get all neighbors to that target coord
-            near_snake_head = is_coord_in_coordlist(snake_body[0], envire_pos_coords_list)
-
-            #check if one of the moves is a direct dead end
-            if (are_all_coords_of_cordlist_blocked_by_snakes(envire_pos_coords_list, all_snake_bodies)):
-              possible_moves_chances = change_chance_of_movement(possible_move, -500 ,possible_moves_chances)
+          envire_pos_coords_list = []
+          envire_pos_coords_list = get_list_environmental_coords_for_coord(possible_coord_dic, board_height, board_width) # and get all neighbors to that target coord
+          near_snake_head = is_coord_in_coordlist(snake_body[0], envire_pos_coords_list)
               
-            # and now check, if on on of the neighbors is the head of another snake
-            if (near_snake_head == True):
-              print(f"SNAKE is near if I go {possible_move}")
-              possible_moves_chances = change_chance_of_movement(possible_move, -100 ,possible_moves_chances) # reduce the chance by 100 if a snakes head is near
+          # and now check, if on on of the neighbors is the head of another snake
+          if (near_snake_head == True):
+            print(f"SNAKE is near if I go {possible_move}")
+            possible_moves_chances = change_chance_of_movement(possible_move, -100 ,possible_moves_chances) # reduce the chance by 100 if a snakes head is near
 
+      """respect deadends"""
+      all_snake_bodies = []
+      for snake in snakes:
+        all_snake_bodies = add_single_list_of_coords_to_other_list_of_coords(snake["body"], all_snake_bodies)
+      for possible_move in possible_moves_chances: # for all possible moves
+            possible_coord_dic = get_coord_for_movedirection(my_head, possible_move)
+      envire_pos_coords_list = []
+      envire_pos_coords_list = get_list_environmental_coords_for_coord(possible_coord_dic, board_height, board_width)  
+                  #check if one of the moves is a direct dead end
+      if (are_all_coords_of_cordlist_blocked_by_snakes(envire_pos_coords_list, all_snake_bodies)):
+        possible_moves_chances = change_chance_of_movement(possible_move, -500 ,possible_moves_chances)
                 
       
           
