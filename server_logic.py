@@ -130,26 +130,46 @@ def is_coord_in_coordlist(coord: [str, int], coord_list: List[dict]) -> str:
       bol_is_in_list = True
   return bol_is_in_list
 
-#Function to get list of neighbor-coords for a coord
-def get_list_environmental_coords_for_coord(coord: [str, int]) -> List[dict]:
+#Function to check if that coordination is a dead_end
+def are_all_coords_of_cordlist_blocked_by_snakes(coord_list: List[dict], all_snake_bodies: List[dict]): 
+  all_blocked = False
+  for i in coord_list:
+    if is_coord_in_coordlist(i, all_snake_bodies):
+      print("Snake")
+    else: 
+      return False
+  return all_blocked
+
+def add_single_list_of_coords_to_other_list_of_coords(coord_list: List[dict], glo_coord_list: List[dict]) -> List[dict]:
+  for i in coord_list:
+    i_copy = i.copy()
+    glo_coord_list.append(i_copy)
+  return glo_coord_list
+  
+#Function to get list of neighbor-coords for a coord respecting edges
+def get_list_environmental_coords_for_coord(coord: [str, int], board_height:[int], board_width:[int]) -> List[dict]:
   result_coord_list = []
-  
-  upper_coord = {"x" : coord["x"], "y" : (coord["y"]+1)}
-  upper_coord_copy = upper_coord.copy()
-  result_coord_list.append(upper_coord_copy)
 
-  lower_coord = {"x" : coord["x"], "y" : (coord["y"]-1)}
-  lower_coord_copy = lower_coord.copy()
-  result_coord_list.append(lower_coord_copy)
+  if (coord["y"]+1) <= board_height:
+    upper_coord = {"x" : coord["x"], "y" : (coord["y"]+1)}
+    upper_coord_copy = upper_coord.copy()
+    result_coord_list.append(upper_coord_copy)
+    
+  if (coord["y"]-1) >= 0:
+    lower_coord = {"x" : coord["x"], "y" : (coord["y"]-1)}
+    lower_coord_copy = lower_coord.copy()
+    result_coord_list.append(lower_coord_copy)
 
-  right_coord = {"x" : (coord["x"]+1), "y" : coord["y"]}
-  right_coord_copy = right_coord.copy()
-  result_coord_list.append(right_coord_copy)
-  
-  left_coord = {"x" : (coord["x"]-1), "y" : coord["y"]}
-  left_coord_copy = left_coord.copy()
-  result_coord_list.append(left_coord_copy)
-  
+  if (coord["x"]+1) <= board_width:
+    right_coord = {"x" : (coord["x"]+1), "y" : coord["y"]}
+    right_coord_copy = right_coord.copy()
+    result_coord_list.append(right_coord_copy)
+
+  if (coord["x"]-1) >= 0:
+    left_coord = {"x" : (coord["x"]-1), "y" : coord["y"]}
+    left_coord_copy = left_coord.copy()
+    result_coord_list.append(left_coord_copy)
+    
   return result_coord_list
       
 #Function to manipulate the chance of a movement direction in a dict move / chance
@@ -190,6 +210,7 @@ def choose_move(data: dict) -> str:
     for each move of the game.
 
     """
+    my_name = data["you"]["name"]
     my_head = data["you"]["head"]  # A dictionary of x/y coordinates like {"x": 0, "y": 0}
     my_body = data["you"]["body"]  # A list of x/y coordinate dictionaries like [ {"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0} ]
     board_height = data["board"]["height"] #int board_height
@@ -254,21 +275,31 @@ def choose_move(data: dict) -> str:
        
       
 
-
+      
       """reduce chance of movement, when other snakes head could go on that field"""
+      all_snake_bodies = []
       for snake in snakes:
-        if (snake["name"] != "daSchnake"):
+        all_snake_bodies = add_single_list_of_coords_to_other_list_of_coords(snake["body"], all_snake_bodies)
+        if (snake["name"] != my_name):
           snake_body = snake["body"] # take other snakes body
+          
           for possible_move in possible_moves_chances: # for all possible moves
             possible_coord_dic = get_coord_for_movedirection(my_head, possible_move) # get every target coord if you do the move
             envire_pos_coords_list = []
-            envire_pos_coords_list = get_list_environmental_coords_for_coord(possible_coord_dic) # and get all neighbors to that target coord
-            near_snake_head = is_coord_in_coordlist(snake_body[0], envire_pos_coords_list) # and now check, if on on of the neighbors is the head of another snake
+            envire_pos_coords_list = get_list_environmental_coords_for_coord(possible_coord_dic, board_height, board_width) # and get all neighbors to that target coord
+            near_snake_head = is_coord_in_coordlist(snake_body[0], envire_pos_coords_list)
+
+            #check if one of the moves is a direct dead end
+            if (are_all_coords_of_cordlist_blocked_by_snakes(envire_pos_coords_list, all_snake_bodies)):
+              possible_moves_chances = change_chance_of_movement(possible_move, -500 ,possible_moves_chances)
+              
+            # and now check, if on on of the neighbors is the head of another snake
             if (near_snake_head == True):
               print(f"SNAKE is near if I go {possible_move}")
               possible_moves_chances = change_chance_of_movement(possible_move, -100 ,possible_moves_chances) # reduce the chance by 100 if a snakes head is near
+
                 
-          #possible_moves = avoid_other_snakes(my_head, snake["body"], possible_moves)
+      
           
       """get the best move option from dict with moves and chances"""
       bestmove = get_move_with_highest_chance(possible_moves_chances) 
