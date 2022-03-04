@@ -81,25 +81,25 @@ def avoid_edges(my_head: Dict[str, int], board_height:[int], board_width:[int], 
 def direct_move_to_eat(my_head: Dict[str, int], food_coord: [str, int]) -> str: 
     #print(f" priomatch food_coord {food_coord} vs {my_head}")
     if (food_coord["x"] == my_head["x"]) and ((food_coord["y"]-1) == my_head["y"]):
-      print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PRIO - eat up")
+      #print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PRIO - eat up")
       return "up"
     elif (food_coord["x"] == my_head["x"]) and ((food_coord["y"]+1) == my_head["y"]):
-      print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PRIO - eat down")
+      #print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PRIO - eat down")
       return "down"
     elif (food_coord["y"] == my_head["y"]) and ((food_coord["x"]+1) == my_head["x"]):
-      print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PRIO - eat left")
+      #print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PRIO - eat left")
       return "left"
     elif (food_coord["y"] == my_head["y"]) and ((food_coord["x"]-1) == my_head["x"]):
-      print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PRIO - eat right")
+      #print ("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! PRIO - eat right")
       return "right"
     else: return "false"
       
 """Improving randomness"""
 #Function to get movement direction out of dictionary having all possible moves witch chances
 def get_move_with_highest_chance(possible_moves_chances:[dict]) -> str:
-  bestmove_chance = 0
+  bestmove_chance = -5000
   for key in possible_moves_chances:
-    if (possible_moves_chances[key] > bestmove_chance or bestmove_chance == 0):
+    if (possible_moves_chances[key] > bestmove_chance or bestmove_chance == -5000):
       bestmove_chance = possible_moves_chances[key]
       bestmove = key
       print(f" {bestmove} mit Chance {possible_moves_chances[key]} ")
@@ -230,92 +230,85 @@ def choose_move(data: dict) -> str:
     possible_moves = ["up", "down", "left", "right"]
     
 
-    # Don't allow your Battlesnake to move back in on it's own neck
+    """ Don't allow your Battlesnake to move back in on it's own neck"""
     possible_moves = avoid_my_neck(my_head, my_body, possible_moves)
-  
-    #  Using information from 'data', find the edges of the board and don't let your Battlesnake move beyond them
+    #print("avoided neck bite")
+    """ Using information from 'data', find the edges of the board and don't let your Battlesnake move beyond them"""
     possible_moves = avoid_edges(my_head, board_height, board_width, my_body, possible_moves)
-
-    # Don't bite your own body
+    #print("avoided go out")
+    """Avoid biting your own body"""
     possible_moves = avoid_my_body(my_head, my_body, possible_moves)
-
-    # Don't bite other snakes
+    #print("avoided self bite")
+    """Avoid to bite another snake"""
     for snake in snakes:
       if (snake["name"] != "daSchnake"):
           possible_moves = avoid_other_snakes(my_head, snake["body"], possible_moves)
-   
-    special_move = "false"
-    # check if there is a move directly to food
-    for food_coord in food:
-      prio_move = direct_move_to_eat(my_head, food_coord)
-      if prio_move != "false":
-        special_move = "true"
-        #if yes - eat it
-        move = prio_move
-        print(f"{data['game']['id']} PRIOMOVE {prio_move}")
+    print("avoided bite other snakes")
   
-    if special_move == "true":
-      print(f"!!!!!  {data['game']['id']} Do the PRIO Move: {prio_move}")
-    else:
-      #create dict with chance per possible move from left possible moves
-      possible_moves_chances = dict() #create the dict 
-      for str_move in possible_moves:
-        possible_moves_chances[str_move] = 0 #create all with chance 0
-        print(f" {str_move} added to move/chance list")
+    """create dict with chance per possible move from left possible moves"""
+    possible_moves_chances = dict() #create the dict 
+    for str_move in possible_moves:
+      possible_moves_chances[str_move] = 0 #create all with chance 0
+      #print(f" {str_move} added to move/chance list")
       
       #print(f" {possible_moves_chances} ")
 
-      """ Go to food if it is horizontalyl or vertically """
-      for food_coord in food: #take all food coordinates
-        improve_move_dic = get_move_to_near_food(my_head, food_coord) #check if it is directly vertically or horizontally and get distance
-        """ take over direction and distance in possible moves """
+    """check if there is a move directly to food"""
+    for food_coord in food:
+      prio_move = direct_move_to_eat(my_head, food_coord)
+      if prio_move != "false":
+        possible_moves_chances = change_chance_of_movement(prio_move, 250 ,possible_moves_chances)
+        
+    """ Go to food if it is horizontalyl or vertically """
+    for food_coord in food: #take all food coordinates
+      improve_move_dic = get_move_to_near_food(my_head, food_coord) #check if it is directly vertically or horizontally and get distance
+      """ take over direction and distance in possible moves """
       for key in improve_move_dic:
         if key != "false":
           possible_moves_chances = change_chance_of_movement(key, improve_move_dic[key], possible_moves_chances)      
-       
-      
-
-      
-      """reduce chance of movement, when other snakes head could go on that field"""
-      all_snake_bodies = []
-      for snake in snakes:
-        all_snake_bodies = add_single_list_of_coords_to_other_list_of_coords(snake["body"], all_snake_bodies)
-        if (snake["name"] != my_name):
-          snake_body = snake["body"] # take other snakes body
-          
-          for possible_move in possible_moves_chances: # for all possible moves
-            possible_coord_dic = get_coord_for_movedirection(my_head, possible_move) # get every target coord if you do the move
+            
+    """reduce chance of movement, when other snakes head could go on that field"""
+    
+    for snake in snakes:
+      #create a list of all coords where snakes bodies are
+      if (snake["name"] != my_name):
+        others_name = snake["name"]
+        snake_body = snake["body"] # take other snakes body  
+        #print(f"{snake_body} von {others_name}")
+        for possible_move in possible_moves_chances: # for all possible moves
+          possible_coord_dic = get_coord_for_movedirection(my_head, possible_move) # get every target coord if you do the move
           envire_pos_coords_list = []
           envire_pos_coords_list = get_list_environmental_coords_for_coord(possible_coord_dic, board_height, board_width) # and get all neighbors to that target coord
+          #print(f"near_snake check for head at :{snake_body[0]}")
           near_snake_head = is_coord_in_coordlist(snake_body[0], envire_pos_coords_list)
               
           # and now check, if on on of the neighbors is the head of another snake
           if (near_snake_head == True):
             print(f"SNAKE is near if I go {possible_move}")
-            possible_moves_chances = change_chance_of_movement(possible_move, -100 ,possible_moves_chances) # reduce the chance by 100 if a snakes head is near
+            possible_moves_chances = change_chance_of_movement(possible_move, -500 ,possible_moves_chances) # reduce the chance by 500 if a snakes head is near
 
-      """respect deadends"""
-      all_snake_bodies = []
-      for snake in snakes:
-        all_snake_bodies = add_single_list_of_coords_to_other_list_of_coords(snake["body"], all_snake_bodies)
+      """respect deadends and lower chance to select from direct dead end"""
+    all_snake_bodies = []
+    for snake in snakes:
+      all_snake_bodies = add_single_list_of_coords_to_other_list_of_coords(snake["body"], all_snake_bodies)
       for possible_move in possible_moves_chances: # for all possible moves
-            possible_coord_dic = get_coord_for_movedirection(my_head, possible_move)
-      envire_pos_coords_list = []
-      envire_pos_coords_list = get_list_environmental_coords_for_coord(possible_coord_dic, board_height, board_width)  
-                  #check if one of the moves is a direct dead end
-      if (are_all_coords_of_cordlist_blocked_by_snakes(envire_pos_coords_list, all_snake_bodies)):
-        possible_moves_chances = change_chance_of_movement(possible_move, -500 ,possible_moves_chances)
+        possible_coord_dic = get_coord_for_movedirection(my_head, possible_move)
+        envire_pos_coords_list = []
+        envire_pos_coords_list = get_list_environmental_coords_for_coord(possible_coord_dic, board_height, board_width)  
+       #check if one of the moves is a direct dead end
+        if (are_all_coords_of_cordlist_blocked_by_snakes(envire_pos_coords_list, all_snake_bodies)):
+          possible_moves_chances = change_chance_of_movement(possible_move, -1000 ,possible_moves_chances)
                 
       
           
-      """get the best move option from dict with moves and chances"""
-      bestmove = get_move_with_highest_chance(possible_moves_chances) 
-      print(f"Selected {bestmove} as best move")
+    """get the best move option from dict with moves and chances"""
+    bestmove = get_move_with_highest_chance(possible_moves_chances) 
+    print(f"Selected {bestmove} as best move")
       
-      
-      move = bestmove
-      #move = random.choice(possible_moves)
-      print(f"{data['game']['id']} MOVE {data['turn']}: {move} picked from all valid options in {possible_moves}")
+     
+    move = bestmove
+    #move = random.choice(possible_moves)
+    print(f"{data['game']['id']} MOVE {data['turn']}: {move} picked from all valid options in {possible_moves_chances}")
     
     # TODO: Explore new strategies for picking a move that are better than random
  
