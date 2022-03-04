@@ -125,19 +125,22 @@ def get_coord_for_movedirection(head: Dict[str, int], move:[str]) -> Dict[str, i
 #Function to check if coordinate is in List of coordinates
 def is_coord_in_coordlist(coord: [str, int], coord_list: List[dict]) -> str:
   bol_is_in_list = False
+  number_of_coords = len(coord_list)
   for i in coord_list: #iterate through all items of the list
     if (i["x"] == coord["x"]) and (i["y"] == coord["y"]): # and set result var on true if coordinates are equal
-      bol_is_in_list = True
-  return bol_is_in_list
+      number_of_coords = number_of_coords - 1
+  if number_of_coords == 0:
+    return True
+  else:
+    return False
 
 #Function to check if that coordination is a dead_end
 def are_all_coords_of_cordlist_blocked_by_snakes(coord_list: List[dict], all_snake_bodies: List[dict]): 
   all_blocked = False
   for i in coord_list:
     if is_coord_in_coordlist(i, all_snake_bodies):
-      print("Snake")
-    else: 
-      return False
+      print("Snakes everywhere!!!")
+      all_blocked = True
   return all_blocked
 
 def add_single_list_of_coords_to_other_list_of_coords(coord_list: List[dict], glo_coord_list: List[dict]) -> List[dict]:
