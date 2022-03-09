@@ -198,6 +198,27 @@ def get_move_to_near_food(my_head: Dict[str, int], food_coord: [str, int]) -> di
       return ({"down": (100-(my_head["y"]-food_coord["y"]))})
   return ({"false": 0})
 
+def lower_outerline_chances(my_head: Dict[str, int], board_height:[int], board_width:[int], possible_moves_chances:[dict]) -> [dict]:
+  
+  if my_head["x"] == 1: 
+    if "left" in possible_moves_chances: 
+      possible_moves_chances = change_chance_of_movement("left", -150 ,possible_moves_chances)
+      print("optimization - left would lead to outline")
+  elif my_head["x"] == (board_width-2):  
+    if "right" in possible_moves_chances: 
+      possible_moves_chances = change_chance_of_movement("right", -150 ,possible_moves_chances)
+      print("optimization - right would lead to outline")
+
+  if my_head["y"] == 1:  
+        if "down" in possible_moves_chances: 
+          possible_moves_chances = change_chance_of_movement("down", -150 ,possible_moves_chances)
+          print("optimization - down would lead to outline")
+  elif my_head["y"] == (board_height-2):
+        if "up" in possible_moves_chances: 
+          possible_moves_chances = change_chance_of_movement("up", -150 ,possible_moves_chances)
+          print("optimization - up would lead to outline")
+  return possible_moves_chances
+
 def bad_idea_check(planned_coord: Dict[str, int], my_body: List[dict], board_height:[int], board_width:[int]) -> int: 
   return 0
 
@@ -253,14 +274,16 @@ def choose_move(data: dict) -> str:
     for str_move in possible_moves:
       possible_moves_chances[str_move] = 0 #create all with chance 0
       #print(f" {str_move} added to move/chance list")
-      
+
+    """better avoid outer lines"""
+    possible_moves_chances = lower_outerline_chances(my_head, board_height, board_width, possible_moves_chances)
       #print(f" {possible_moves_chances} ")
 
     """check if there is a move directly to food"""
     for food_coord in food:
       prio_move = direct_move_to_eat(my_head, food_coord)
       if prio_move != "false":
-        possible_moves_chances = change_chance_of_movement(prio_move, 250 ,possible_moves_chances)
+        possible_moves_chances = change_chance_of_movement(prio_move, 50 ,possible_moves_chances)
         
     """ Go to food if it is horizontalyl or vertically """
     for food_coord in food: #take all food coordinates
@@ -288,7 +311,7 @@ def choose_move(data: dict) -> str:
           # and now check, if on on of the neighbors is the head of another snake
           if (near_snake_head == True):
             print(f"SNAKE is near if I go {possible_move}")
-            possible_moves_chances = change_chance_of_movement(possible_move, -500 ,possible_moves_chances) # reduce the chance by 500 if a snakes head is near
+            possible_moves_chances = change_chance_of_movement(possible_move, -1000 ,possible_moves_chances) # reduce the chance by 500 if a snakes head is near
 
       """respect deadends and lower chance to select from direct dead end"""
     all_snake_bodies = []
@@ -300,7 +323,8 @@ def choose_move(data: dict) -> str:
         envire_pos_coords_list = get_list_environmental_coords_for_coord(possible_coord_dic, board_height, board_width)  
        #check if one of the moves is a direct dead end
         if (are_all_coords_of_cordlist_blocked_by_snakes(envire_pos_coords_list, all_snake_bodies)):
-          possible_moves_chances = change_chance_of_movement(possible_move, -1000 ,possible_moves_chances)
+          possible_moves_chances = change_chance_of_movement(possible_move, -3000 ,possible_moves_chances)
+       
                 
       
           
