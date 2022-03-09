@@ -243,6 +243,8 @@ def choose_move(data: dict) -> str:
     #print (board_width)
     food = data["board"]["food"] #A list of x/y coordinate dictionaries like [ {"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0} ] 
     snakes = data["board"]["snakes"]
+    my_length = data["you"]["length"] #int length
+    my_health = data["you"]["health"] 
     
        
     # TODO: uncomment the lines below so you can see what this data looks like in your output!
@@ -265,9 +267,11 @@ def choose_move(data: dict) -> str:
     #print("avoided self bite")
     """Avoid to bite another snake"""
     for snake in snakes:
-      if (snake["name"] != "daSchnake"):
-          possible_moves = avoid_other_snakes(my_head, snake["body"], possible_moves)
-    print("avoided bite other snakes")
+      others_name = snake["name"]
+      #create a list of all coords where snakes bodies are
+      if (others_name != my_name):
+        possible_moves = avoid_other_snakes(my_head, snake["body"], possible_moves)
+        print("avoided bite other snakes")
   
     """create dict with chance per possible move from left possible moves"""
     possible_moves_chances = dict() #create the dict 
@@ -275,15 +279,17 @@ def choose_move(data: dict) -> str:
       possible_moves_chances[str_move] = 0 #create all with chance 0
       #print(f" {str_move} added to move/chance list")
 
-    """better avoid outer lines"""
-    possible_moves_chances = lower_outerline_chances(my_head, board_height, board_width, possible_moves_chances)
+    """better avoid outer lines if your length is higher than"""
+    if my_length > 10:
+      possible_moves_chances = lower_outerline_chances(my_head, board_height, board_width, possible_moves_chances)
       #print(f" {possible_moves_chances} ")
 
     """check if there is a move directly to food"""
     for food_coord in food:
       prio_move = direct_move_to_eat(my_head, food_coord)
       if prio_move != "false":
-        possible_moves_chances = change_chance_of_movement(prio_move, 50 ,possible_moves_chances)
+        possible_moves_chances = change_chance_of_movement(prio_move, (200 - (my_health * 2)) ,possible_moves_chances)
+      
         
     """ Go to food if it is horizontalyl or vertically """
     for food_coord in food: #take all food coordinates
@@ -296,16 +302,17 @@ def choose_move(data: dict) -> str:
     """reduce chance of movement, when other snakes head could go on that field"""
     
     for snake in snakes:
+      others_name = snake["name"]
       #create a list of all coords where snakes bodies are
-      if (snake["name"] != my_name):
-        others_name = snake["name"]
+      if (others_name != my_name):
+        print(f"{my_name} is not {others_name}")        
         snake_body = snake["body"] # take other snakes body  
-        #print(f"{snake_body} von {others_name}")
         for possible_move in possible_moves_chances: # for all possible moves
           possible_coord_dic = get_coord_for_movedirection(my_head, possible_move) # get every target coord if you do the move
           envire_pos_coords_list = []
           envire_pos_coords_list = get_list_environmental_coords_for_coord(possible_coord_dic, board_height, board_width) # and get all neighbors to that target coord
           #print(f"near_snake check for head at :{snake_body[0]}")
+          near_snake_head = False
           near_snake_head = is_coord_in_coordlist(snake_body[0], envire_pos_coords_list)
               
           # and now check, if on on of the neighbors is the head of another snake
@@ -313,7 +320,7 @@ def choose_move(data: dict) -> str:
             print(f"SNAKE is near if I go {possible_move}")
             possible_moves_chances = change_chance_of_movement(possible_move, -1000 ,possible_moves_chances) # reduce the chance by 500 if a snakes head is near
 
-      """respect deadends and lower chance to select from direct dead end"""
+      """respect deadends and lower chance to select from direct dead end
     all_snake_bodies = []
     for snake in snakes:
       all_snake_bodies = add_single_list_of_coords_to_other_list_of_coords(snake["body"], all_snake_bodies)
@@ -324,6 +331,7 @@ def choose_move(data: dict) -> str:
        #check if one of the moves is a direct dead end
         if (are_all_coords_of_cordlist_blocked_by_snakes(envire_pos_coords_list, all_snake_bodies)):
           possible_moves_chances = change_chance_of_movement(possible_move, -3000 ,possible_moves_chances)
+       """
        
                 
       
