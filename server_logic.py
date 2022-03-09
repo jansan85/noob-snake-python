@@ -247,6 +247,7 @@ def choose_move(data: dict) -> str:
   board_width = data["board"]["width"] #int board width
   food = data["board"]["food"] #A list of x/y coordinate dictionaries like [ {"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0} ] 
   snakes = data["board"]["snakes"]
+  turn_id = data["turn"]
   othersnakes = snakes[:]
 
   """delete own snake from list of othersnakes"""
@@ -286,7 +287,7 @@ def choose_move(data: dict) -> str:
     #print(f" {str_move} added to move/chance list")
 
   """better avoid outer lines if your length is higher than"""
-  if my_length > 5:
+  if my_length > 5 or turn_id > 10:
     possible_moves_chances = lower_outerline_chances(my_head, board_height, board_width, possible_moves_chances)
     #print(f" {possible_moves_chances} ")
 
