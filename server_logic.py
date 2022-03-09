@@ -122,17 +122,23 @@ def get_coord_for_movedirection(head: Dict[str, int], move:[str]) -> Dict[str, i
     else:
       return head
 
+def i_am_longest(snakes: List[dict], my_length:[int], my_name:[str]):
+  longest = True  
+  for snake in snakes:
+      other_snake_name = snake["name"]
+      other_snake_length = snake["length"]
+      if other_snake_name != my_name and other_snake_length >= my_length:
+        longest = False      
+  return longest
+      
 #Function to check if coordinate is in List of coordinates
-def is_coord_in_coordlist(coord: [str, int], coord_list: List[dict]) -> str:
+def is_coord_in_coordlist(coord: [str, int], coord_list: List[dict]):
   bol_is_in_list = False
-  number_of_coords = len(coord_list)
   for i in coord_list: #iterate through all items of the list
-    if (i["x"] == coord["x"]) and (i["y"] == coord["y"]): # and set result var on true if coordinates are equal
-      number_of_coords = number_of_coords - 1
-  if number_of_coords == 0:
-    return True
-  else:
-    return False
+    print(f"create coord for {i}")
+    if (i["x"] == coord["x"]) and (i["y"] == coord["y"]): 
+      bol_is_in_list = True
+  return bol_is_in_list
 
 #Function to check if that coordination is a dead_end
 def are_all_coords_of_cordlist_blocked_by_snakes(coord_list: List[dict], all_snake_bodies: List[dict]): 
@@ -223,130 +229,115 @@ def bad_idea_check(planned_coord: Dict[str, int], my_body: List[dict], board_hei
   return 0
 
 def choose_move(data: dict) -> str:
-    """
-    data: Dictionary of all Game Board data as received from the Battlesnake Engine.
-    For a full example of 'data', see https://docs.battlesnake.com/references/api/sample-move-request
+  """
+  data: Dictionary of all Game Board data as received from the Battlesnake Engine.
+  For a full example of 'data', see https://docs.battlesnake.com/references/api/sample-  move-request
 
-    return: A String, the single move to make. One of "up", "down", "left" or "right".
+  return: A String, the single move to make. One of "up", "down", "left" or "right".
 
-    Use the information in 'data' to decide your next move. The 'data' variable can be interacted
-    with as a Python Dictionary, and contains all of the information about the Battlesnake board
-    for each move of the game.
+  Use the information in 'data' to decide your next move. The 'data' variable can be 
+  interacted with as a Python Dictionary, and contains all of the information about   
+  the Battlesnake board
+  for each move of the game.
+  """
+  my_name = data["you"]["name"]
+  my_head = data["you"]["head"]  # dict of head {"x": 0, "y": 0}
+  my_body = data["you"]["body"]  # A list of x/y coordinate dictionaries like [ {"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0} ]
+  board_height = data["board"]["height"] #int board_height
+  board_width = data["board"]["width"] #int board width
+  food = data["board"]["food"] #A list of x/y coordinate dictionaries like [ {"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0} ] 
+  snakes = data["board"]["snakes"]
+  othersnakes = snakes[:]
 
-    """
-    my_name = data["you"]["name"]
-    my_head = data["you"]["head"]  # A dictionary of x/y coordinates like {"x": 0, "y": 0}
-    my_body = data["you"]["body"]  # A list of x/y coordinate dictionaries like [ {"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0} ]
-    board_height = data["board"]["height"] #int board_height
-    #print (board_height)
-    board_width = data["board"]["width"] #int board width
-    #print (board_width)
-    food = data["board"]["food"] #A list of x/y coordinate dictionaries like [ {"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0} ] 
-    snakes = data["board"]["snakes"]
-    my_length = data["you"]["length"] #int length
-    my_health = data["you"]["health"] 
+  """delete own snake from list of othersnakes"""
+  for i in range(len(othersnakes)):
+    if othersnakes[i]["name"] == my_name:
+        del othersnakes[i]
+        break
+
+  print(f"other snakes are {othersnakes}")
+  
+  my_length = data["you"]["length"] #int length
+  my_health = data["you"]["health"] 
     
        
-    # TODO: uncomment the lines below so you can see what this data looks like in your output!
-    # print(f"~~~ Turn: {data['turn']}  Game Mode: {data['game']['ruleset']['name']} ~~~")
-    # print(f"All board data this turn: {data}")
-    # print(f"My Battlesnakes head this turn is: {my_head}")
-    # print(f"My Battlesnakes body this turn is: {my_body}")
-
-    possible_moves = ["up", "down", "left", "right"]
+  possible_moves = ["up", "down", "left", "right"]
     
 
-    """ Don't allow your Battlesnake to move back in on it's own neck"""
-    possible_moves = avoid_my_neck(my_head, my_body, possible_moves)
-    #print("avoided neck bite")
-    """ Using information from 'data', find the edges of the board and don't let your Battlesnake move beyond them"""
-    possible_moves = avoid_edges(my_head, board_height, board_width, my_body, possible_moves)
-    #print("avoided go out")
-    """Avoid biting your own body"""
-    possible_moves = avoid_my_body(my_head, my_body, possible_moves)
-    #print("avoided self bite")
-    """Avoid to bite another snake"""
-    for snake in snakes:
-      others_name = snake["name"]
-      #create a list of all coords where snakes bodies are
-      if (others_name != my_name):
-        possible_moves = avoid_other_snakes(my_head, snake["body"], possible_moves)
-        print("avoided bite other snakes")
+  """ Don't allow your Battlesnake to move back in on it's own neck"""
+  possible_moves = avoid_my_neck(my_head, my_body, possible_moves)
   
-    """create dict with chance per possible move from left possible moves"""
-    possible_moves_chances = dict() #create the dict 
-    for str_move in possible_moves:
-      possible_moves_chances[str_move] = 0 #create all with chance 0
-      #print(f" {str_move} added to move/chance list")
+  """ Using information from 'data', find the edges of the board and don't let your Battlesnake move beyond them"""
+  possible_moves = avoid_edges(my_head, board_height, board_width, my_body, possible_moves)
 
-    """better avoid outer lines if your length is higher than"""
-    if my_length > 10:
-      possible_moves_chances = lower_outerline_chances(my_head, board_height, board_width, possible_moves_chances)
-      #print(f" {possible_moves_chances} ")
+  """Avoid biting your own body"""
+  possible_moves = avoid_my_body(my_head, my_body, possible_moves)
 
-    """check if there is a move directly to food"""
-    for food_coord in food:
-      prio_move = direct_move_to_eat(my_head, food_coord)
-      if prio_move != "false":
-        possible_moves_chances = change_chance_of_movement(prio_move, (200 - (my_health * 2)) ,possible_moves_chances)
+  """Avoid to bite another snake"""
+  for enemy_snake in othersnakes:
+    enemy_snake_name = enemy_snake["name"]
+    possible_moves = avoid_other_snakes(my_head, enemy_snake["body"], possible_moves)
+    print(f"avoided bite other snake {enemy_snake_name}")
+  
+  """create dict with chance per possible move from left possible moves"""
+  possible_moves_chances = dict() #create the dict 
+  for str_move in possible_moves:
+    possible_moves_chances[str_move] = 0 #create all with chance 0
+    #print(f" {str_move} added to move/chance list")
+
+  """better avoid outer lines if your length is higher than"""
+  if my_length > 5:
+    possible_moves_chances = lower_outerline_chances(my_head, board_height, board_width, possible_moves_chances)
+    #print(f" {possible_moves_chances} ")
+
+  """check if there is a move directly to food"""
+  for food_coord in food:
+    prio_move = direct_move_to_eat(my_head, food_coord)
+    if prio_move != "false":
+      possible_moves_chances = change_chance_of_movement(prio_move, (200 - (my_health * 2)) ,possible_moves_chances)
       
         
-    """ Go to food if it is horizontalyl or vertically """
-    for food_coord in food: #take all food coordinates
-      improve_move_dic = get_move_to_near_food(my_head, food_coord) #check if it is directly vertically or horizontally and get distance
-      """ take over direction and distance in possible moves """
-      for key in improve_move_dic:
-        if key != "false":
-          possible_moves_chances = change_chance_of_movement(key, improve_move_dic[key], possible_moves_chances)      
+  """ Go to food if it is horizontalyl or vertically """
+  for food_coord in food: #take all food coordinates
+    improve_move_dic = get_move_to_near_food(my_head, food_coord) #check if it is directly vertically or horizontally and get distance
+    """ take over direction and distance in possible moves """
+    for key in improve_move_dic:
+      if key != "false":
+        possible_moves_chances = change_chance_of_movement(key, improve_move_dic[key], possible_moves_chances)      
             
-    """reduce chance of movement, when other snakes head could go on that field"""
-    
-    for snake in snakes:
-      others_name = snake["name"]
-      #create a list of all coords where snakes bodies are
-      if (others_name != my_name):
-        print(f"{my_name} is not {others_name}")        
-        snake_body = snake["body"] # take other snakes body  
-        for possible_move in possible_moves_chances: # for all possible moves
-          possible_coord_dic = get_coord_for_movedirection(my_head, possible_move) # get every target coord if you do the move
-          envire_pos_coords_list = []
-          envire_pos_coords_list = get_list_environmental_coords_for_coord(possible_coord_dic, board_height, board_width) # and get all neighbors to that target coord
-          #print(f"near_snake check for head at :{snake_body[0]}")
-          near_snake_head = False
-          near_snake_head = is_coord_in_coordlist(snake_body[0], envire_pos_coords_list)
-              
-          # and now check, if on on of the neighbors is the head of another snake
-          if (near_snake_head == True):
-            print(f"SNAKE is near if I go {possible_move}")
+  """reduce chance of movement, when other snakes head could go on that field"""
+  for possible_move in possible_moves_chances: # for all possible moves
+      possible_coord_dic = get_coord_for_movedirection(my_head, possible_move) # get every target coord if you do the move
+      print(f"what about {possible_coord_dic}")
+      envire_pos_coords_list = []
+      envire_pos_coords_list = get_list_environmental_coords_for_coord(possible_coord_dic, board_height, board_width)
+      for othersnake in othersnakes:
+        othersnake_body = othersnake["body"]
+        print(f"near_snake check for head at :{othersnake_body[0]}")
+        if is_coord_in_coordlist(othersnake_body[0],envire_pos_coords_list):
+          print(f"SNAKE is near if I go {possible_move}")
+          if (i_am_longest(snakes, my_length, my_name)):
+            print(f"BUT I AM LONGEST")
+            possible_moves_chances = change_chance_of_movement(possible_move, +2000 ,possible_moves_chances)
+          else:
             possible_moves_chances = change_chance_of_movement(possible_move, -1000 ,possible_moves_chances) # reduce the chance by 500 if a snakes head is near
 
-      """respect deadends and lower chance to select from direct dead end
-    all_snake_bodies = []
-    for snake in snakes:
-      all_snake_bodies = add_single_list_of_coords_to_other_list_of_coords(snake["body"], all_snake_bodies)
-      for possible_move in possible_moves_chances: # for all possible moves
-        possible_coord_dic = get_coord_for_movedirection(my_head, possible_move)
-        envire_pos_coords_list = []
-        envire_pos_coords_list = get_list_environmental_coords_for_coord(possible_coord_dic, board_height, board_width)  
-       #check if one of the moves is a direct dead end
-        if (are_all_coords_of_cordlist_blocked_by_snakes(envire_pos_coords_list, all_snake_bodies)):
-          possible_moves_chances = change_chance_of_movement(possible_move, -3000 ,possible_moves_chances)
-       """
+
        
                 
       
           
-    """get the best move option from dict with moves and chances"""
-    bestmove = get_move_with_highest_chance(possible_moves_chances) 
-    print(f"Selected {bestmove} as best move")
+  """get the best move option from dict with moves and chances"""
+  bestmove = get_move_with_highest_chance(possible_moves_chances) 
+  print(f"Selected {bestmove} as best move")
       
      
-    move = bestmove
+  move = bestmove
     #move = random.choice(possible_moves)
-    print(f"{data['game']['id']} MOVE {data['turn']}: {move} picked from all valid options in {possible_moves_chances}")
+  print(f"{data['game']['id']} MOVE {data['turn']}: {move} picked from all valid options in {possible_moves_chances}")
     
-    # TODO: Explore new strategies for picking a move that are better than random
+  # TODO: Explore new strategies for picking a move that are better than random
  
     
 
-    return move
+  return move
