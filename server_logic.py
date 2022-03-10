@@ -10,20 +10,23 @@ from the list of possible moves!
 
 
 """ Avoiding biting your body to take out moves on fields your own body is on """
-def avoid_my_body(my_head: Dict[str, int], my_body: List[dict], possible_moves: List[str]) -> List[str]:
+def avoid_my_body(my_head: Dict[str, int], my_body: List[dict], possible_moves: List[str], my_tail:Dict[str, int]) -> List[str]:
   for body_part in my_body:
-    if (body_part["x"] == my_head["x"]) and ((body_part["y"]+1) == my_head["y"]):
-      print("body  - - - Dont go down")
-      if "down" in possible_moves: possible_moves.remove("down")
-    if (body_part["x"] == my_head["x"]) and ((body_part["y"]-1) == my_head["y"]):
-      print("body  - - - Dont go up")
-      if "up" in possible_moves: possible_moves.remove("up")
-    if (body_part["y"] == my_head["y"]) and ((body_part["x"]+1) == my_head["x"]):
-      print("body  - - - Dont go left")
-      if "left" in possible_moves: possible_moves.remove("left")
-    if (body_part["y"] == my_head["y"]) and ((body_part["x"]-1) == my_head["x"]):
-      print("body  - - - Dont go right")
-      if "right" in possible_moves: possible_moves.remove("right")
+    if are_these_coords_equal(body_part, my_tail):
+      print("My Tail is a friend...")
+    else:
+      if (body_part["x"] == my_head["x"]) and ((body_part["y"]+1) == my_head["y"]):
+        print("body  - - - Dont go down")
+        if "down" in possible_moves: possible_moves.remove("down")
+      if (body_part["x"] == my_head["x"]) and ((body_part["y"]-1) == my_head["y"]):
+        print("body  - - - Dont go up")
+        if "up" in possible_moves: possible_moves.remove("up")
+      if (body_part["y"] == my_head["y"]) and ((body_part["x"]+1) == my_head["x"]):
+        print("body  - - - Dont go left")
+        if "left" in possible_moves: possible_moves.remove("left")
+      if (body_part["y"] == my_head["y"]) and ((body_part["x"]-1) == my_head["x"]):
+        print("body  - - - Dont go right")
+        if "right" in possible_moves: possible_moves.remove("right")
   return possible_moves
 
 """ Avoiding biting other snakes by taking out moves on fields another snake is on """
@@ -120,8 +123,10 @@ def get_coord_for_movedirection(head: Dict[str, int], move:[str]) -> Dict[str, i
       head["x"] = (head["x"] + 1)
       return head
     else:
+      print("BIG ERROR")
       return head
 
+# Check if our snake is the longest - return Bool
 def i_am_longest(snakes: List[dict], my_length:[int], my_name:[str]):
   longest = True  
   for snake in snakes:
@@ -140,6 +145,13 @@ def is_coord_in_coordlist(coord: [str, int], coord_list: List[dict]):
       bol_is_in_list = True
   return bol_is_in_list
 
+#Function are two coords the same return Bool
+def are_these_coords_equal(coord1: [str, int], coord2: [str, int]):
+  if (coord1["x"] == coord2["x"]) and (coord1["y"] == coord2["y"]):
+    return True
+  else:
+    return False
+
 #Function to check if that coordination is a dead_end
 def are_all_coords_of_cordlist_blocked_by_snakes(coord_list: List[dict], all_snake_bodies: List[dict]): 
   all_blocked = False
@@ -154,6 +166,13 @@ def add_single_list_of_coords_to_other_list_of_coords(coord_list: List[dict], gl
     i_copy = i.copy()
     glo_coord_list.append(i_copy)
   return glo_coord_list
+
+
+#get Tail of a snake by taking coord of last list item of snakes body
+def get_tail_of_snake(snake: List[dict]) -> Dict[str, int]:
+  tail = snake.pop()
+  print(f"{tail} is a tail")
+  return tail
   
 #Function to get list of neighbor-coords for a coord respecting edges
 def get_list_environmental_coords_for_coord(coord: [str, int], board_height:[int], board_width:[int]) -> List[dict]:
@@ -204,6 +223,7 @@ def get_move_to_near_food(my_head: Dict[str, int], food_coord: [str, int]) -> di
       return ({"down": (100-(my_head["y"]-food_coord["y"]))})
   return ({"false": 0})
 
+# Manipulate the chances of moves to outerlines by -150
 def lower_outerline_chances(my_head: Dict[str, int], board_height:[int], board_width:[int], possible_moves_chances:[dict]) -> [dict]:
   
   if my_head["x"] == 1: 
@@ -243,14 +263,15 @@ def choose_move(data: dict) -> str:
   my_name = data["you"]["name"]
   my_head = data["you"]["head"]  # dict of head {"x": 0, "y": 0}
   my_body = data["you"]["body"]  # A list of x/y coordinate dictionaries like [ {"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0} ]
+  my_tail = get_tail_of_snake(my_body)
   board_height = data["board"]["height"] #int board_height
   board_width = data["board"]["width"] #int board width
   food = data["board"]["food"] #A list of x/y coordinate dictionaries like [ {"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0} ] 
   snakes = data["board"]["snakes"]
   turn_id = data["turn"]
-  othersnakes = snakes[:]
-
+  
   """delete own snake from list of othersnakes"""
+  othersnakes = snakes[:]
   for i in range(len(othersnakes)):
     if othersnakes[i]["name"] == my_name:
         del othersnakes[i]
@@ -272,7 +293,7 @@ def choose_move(data: dict) -> str:
   possible_moves = avoid_edges(my_head, board_height, board_width, my_body, possible_moves)
 
   """Avoid biting your own body"""
-  possible_moves = avoid_my_body(my_head, my_body, possible_moves)
+  possible_moves = avoid_my_body(my_head, my_body, possible_moves, my_tail)
 
   """Avoid to bite another snake"""
   for enemy_snake in othersnakes:
@@ -291,12 +312,13 @@ def choose_move(data: dict) -> str:
     possible_moves_chances = lower_outerline_chances(my_head, board_height, board_width, possible_moves_chances)
     #print(f" {possible_moves_chances} ")
 
+  
   """check if there is a move directly to food"""
   for food_coord in food:
     prio_move = direct_move_to_eat(my_head, food_coord)
     if prio_move != "false":
       possible_moves_chances = change_chance_of_movement(prio_move, (200 - (my_health * 2)) ,possible_moves_chances)
-      
+
         
   """ Go to food if it is horizontalyl or vertically """
   for food_coord in food: #take all food coordinates
@@ -309,7 +331,6 @@ def choose_move(data: dict) -> str:
   """reduce chance of movement, when other snakes head could go on that field"""
   for possible_move in possible_moves_chances: # for all possible moves
       possible_coord_dic = get_coord_for_movedirection(my_head, possible_move) # get every target coord if you do the move
-      print(f"what about {possible_coord_dic}")
       envire_pos_coords_list = []
       envire_pos_coords_list = get_list_environmental_coords_for_coord(possible_coord_dic, board_height, board_width)
       for othersnake in othersnakes:
