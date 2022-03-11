@@ -140,7 +140,7 @@ def i_am_longest(snakes: List[dict], my_length:[int], my_name:[str]):
 def is_coord_in_coordlist(coord: [str, int], coord_list: List[dict]):
   bol_is_in_list = False
   for i in coord_list: #iterate through all items of the list
-    print(f"create coord for {i}")
+    #print(f"create coord for {i}")
     if (i["x"] == coord["x"]) and (i["y"] == coord["y"]): 
       bol_is_in_list = True
   return bol_is_in_list
@@ -277,7 +277,7 @@ def choose_move(data: dict) -> str:
         del othersnakes[i]
         break
 
-  print(f"other snakes are {othersnakes}")
+  #print(f"other snakes are {othersnakes}")
   
   my_length = data["you"]["length"] #int length
   my_health = data["you"]["health"] 
@@ -299,7 +299,7 @@ def choose_move(data: dict) -> str:
   for enemy_snake in othersnakes:
     enemy_snake_name = enemy_snake["name"]
     possible_moves = avoid_other_snakes(my_head, enemy_snake["body"], possible_moves)
-    print(f"avoided bite other snake {enemy_snake_name}")
+    #print(f"avoided bite other snake {enemy_snake_name}")
   
   """create dict with chance per possible move from left possible moves"""
   possible_moves_chances = dict() #create the dict 
@@ -328,7 +328,7 @@ def choose_move(data: dict) -> str:
       if key != "false":
         possible_moves_chances = change_chance_of_movement(key, improve_move_dic[key], possible_moves_chances)      
             
-  """reduce chance of movement, when other snakes head could go on that field"""
+  """reduce chance of movement, when other snakes head could go on that field - except I am longer - than kill it"""
   for possible_move in possible_moves_chances: # for all possible moves
       possible_coord_dic = get_coord_for_movedirection(my_head, possible_move) # get every target coord if you do the move
       envire_pos_coords_list = []
@@ -338,20 +338,17 @@ def choose_move(data: dict) -> str:
         print(f"near_snake check for head at :{othersnake_body[0]}")
         if is_coord_in_coordlist(othersnake_body[0],envire_pos_coords_list):
           print(f"SNAKE is near if I go {possible_move}")
-          if (i_am_longest(snakes, my_length, my_name)):
-            print(f"BUT I AM LONGEST")
+          #if (i_am_longest(snakes, my_length, my_name)):
+          if (othersnake["length"] < my_length):
+            print(f"KILLER -- -- -- With {my_length} I am longer than {othersnake['name']} with {othersnake['length']}")
             possible_moves_chances = change_chance_of_movement(possible_move, +2000 ,possible_moves_chances)
           else:
             possible_moves_chances = change_chance_of_movement(possible_move, -1000 ,possible_moves_chances) # reduce the chance by 500 if a snakes head is near
 
-
-       
-                
-      
           
   """get the best move option from dict with moves and chances"""
   bestmove = get_move_with_highest_chance(possible_moves_chances) 
-  print(f"Selected {bestmove} as best move")
+  print(f"Selected {bestmove} as best move for MOVE {data['turn']}")
       
      
   move = bestmove
