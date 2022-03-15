@@ -223,25 +223,25 @@ def get_move_to_near_food(my_head: Dict[str, int], food_coord: [str, int]) -> di
       return ({"down": (100-(my_head["y"]-food_coord["y"]))})
   return ({"false": 0})
 
-# Manipulate the chances of moves to outerlines by -150
-def lower_outerline_chances(my_head: Dict[str, int], board_height:[int], board_width:[int], possible_moves_chances:[dict]) -> [dict]:
-  
+# Manipulate the chances of moves to outerlines by -10 - own_health * 2 (max -210)
+def lower_outerline_chances(my_head: Dict[str, int],my_health: [int], board_height:[int], board_width:[int], possible_moves_chances:[dict]) -> [dict]:
+  chancereduction = (-10 - (my_health * 2))
   if my_head["x"] == 1: 
     if "left" in possible_moves_chances: 
-      possible_moves_chances = change_chance_of_movement("left", -150 ,possible_moves_chances)
+      possible_moves_chances = change_chance_of_movement("left", chancereduction ,possible_moves_chances)
       print("optimization - left would lead to outline")
   elif my_head["x"] == (board_width-2):  
     if "right" in possible_moves_chances: 
-      possible_moves_chances = change_chance_of_movement("right", -150 ,possible_moves_chances)
+      possible_moves_chances = change_chance_of_movement("right", chancereduction ,possible_moves_chances)
       print("optimization - right would lead to outline")
 
   if my_head["y"] == 1:  
         if "down" in possible_moves_chances: 
-          possible_moves_chances = change_chance_of_movement("down", -150 ,possible_moves_chances)
+          possible_moves_chances = change_chance_of_movement("down", chancereduction ,possible_moves_chances)
           print("optimization - down would lead to outline")
   elif my_head["y"] == (board_height-2):
         if "up" in possible_moves_chances: 
-          possible_moves_chances = change_chance_of_movement("up", -150 ,possible_moves_chances)
+          possible_moves_chances = change_chance_of_movement("up", chancereduction ,possible_moves_chances)
           print("optimization - up would lead to outline")
   return possible_moves_chances
 
@@ -309,7 +309,7 @@ def choose_move(data: dict) -> str:
 
   """better avoid outer lines if your length is higher than"""
   if my_length > 5 or turn_id > 10:
-    possible_moves_chances = lower_outerline_chances(my_head, board_height, board_width, possible_moves_chances)
+    possible_moves_chances = lower_outerline_chances(my_head, my_health, board_height, board_width, possible_moves_chances)
     #print(f" {possible_moves_chances} ")
 
   
