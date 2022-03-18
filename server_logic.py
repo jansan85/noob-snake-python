@@ -10,6 +10,7 @@ from the list of possible moves!
 
 
 """ Avoiding biting your body to take out moves on fields your own body is on """
+
 def avoid_my_body(my_head: Dict[str, int], my_body: List[dict], possible_moves: List[str], my_tail:Dict[str, int]) -> List[str]:
   for body_part in my_body:
     if are_these_coords_equal(body_part, my_tail):
@@ -128,13 +129,21 @@ def get_coord_for_movedirection(head: Dict[str, int], move:[str]) -> Dict[str, i
 
 # Check if our snake is the longest - return Bool
 def i_am_longest(snakes: List[dict], my_length:[int], my_name:[str]):
-  longest = True  
+  global longest
+  longest = True
   for snake in snakes:
       other_snake_name = snake["name"]
       other_snake_length = snake["length"]
       if other_snake_name != my_name and other_snake_length >= my_length:
         longest = False      
-  return longest
+
+# If health < height+width (max steps to reach food) or 
+def i_am_hungry(my_health: [int]):
+  global hungry
+  if my_health > (board_height + board_width) and longest:
+    hungry = False
+  else:
+    hungry = True
       
 #Function to check if coordinate is in List of coordinates
 def is_coord_in_coordlist(coord: [str, int], coord_list: List[dict]):
@@ -199,7 +208,12 @@ def get_list_environmental_coords_for_coord(coord: [str, int], board_height:[int
     result_coord_list.append(left_coord_copy)
     
   return result_coord_list
-      
+
+# get all coord neighbors in a list for a given coor
+def get_all_moves(coord):
+    return [{'x': coord['x'], 'y': coord['y'] + 1}, {'x': coord['x'], 'y': coord['y'] - 1}, {'x': coord['x'] + 1, 'y': coord['y']}, {'x': coord['x'] - 1, 'y': coord['y']}]
+
+
 #Function to manipulate the chance of a movement direction in a dict move / chance
 def change_chance_of_movement(move:[str], chance_value:[int], possible_moves_chances:[dict]) -> dict:
   if move in possible_moves_chances: 
@@ -264,7 +278,9 @@ def choose_move(data: dict) -> str:
   my_head = data["you"]["head"]  # dict of head {"x": 0, "y": 0}
   my_body = data["you"]["body"]  # A list of x/y coordinate dictionaries like [ {"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0} ]
   my_tail = get_tail_of_snake(my_body)
+  global board_height
   board_height = data["board"]["height"] #int board_height
+  global board_width
   board_width = data["board"]["width"] #int board width
   food = data["board"]["food"] #A list of x/y coordinate dictionaries like [ {"x": 0, "y": 0}, {"x": 1, "y": 0}, {"x": 2, "y": 0} ] 
   snakes = data["board"]["snakes"]
@@ -284,7 +300,9 @@ def choose_move(data: dict) -> str:
     
        
   possible_moves = ["up", "down", "left", "right"]
-    
+
+  i_am_longest(othersnakes, my_length, my_name)
+  i_am_hungry(my_health)
 
   """ Don't allow your Battlesnake to move back in on it's own neck"""
   possible_moves = avoid_my_neck(my_head, my_body, possible_moves)
@@ -307,8 +325,8 @@ def choose_move(data: dict) -> str:
     possible_moves_chances[str_move] = 0 #create all with chance 0
     #print(f" {str_move} added to move/chance list")
 
-  """better avoid outer lines if your length is higher than"""
-  if my_length > 5 or turn_id > 10:
+  """better avoid outer lines if you are not hungry"""
+  if turn_id > 20 and not hungry:
     possible_moves_chances = lower_outerline_chances(my_head, my_health, board_height, board_width, possible_moves_chances)
     #print(f" {possible_moves_chances} ")
 
