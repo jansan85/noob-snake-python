@@ -144,6 +144,23 @@ def i_am_hungry(my_health: [int]):
     hungry = False
   else:
     hungry = True
+
+def get_move_to_leave_outerline_if_i_am_on_it(head: Dict[str, int]):
+  global own_head_outerline #set global own_head_on_outerline boolean
+  if (head["x"] == 0 or (head["x"] == (board_width-1)) or head["y"] == 0 or (head["y"] == (board_height-1))):
+    own_head_outerline = True
+    if head["x"] == 0:
+      return "right"
+    elif (head["x"] == (board_width-1)):
+      return "left"
+    elif head["y"] == 0:
+      return "up"
+    elif (head["y"] == (board_height-1)):
+      return "down"
+  else:
+    own_head_outerline = False
+    return False  
+  
       
 #Function to check if coordinate is in List of coordinates
 def is_coord_in_coordlist(coord: [str, int], coord_list: List[dict]):
@@ -214,6 +231,13 @@ def get_all_moves(coord):
     return [{'x': coord['x'], 'y': coord['y'] + 1}, {'x': coord['x'], 'y': coord['y'] - 1}, {'x': coord['x'] + 1, 'y': coord['y']}, {'x': coord['x'] - 1, 'y': coord['y']}]
 
 
+#Function retturn True if coord is on outerline
+def is_coord_on_outerline(coord: [str, int]):
+  if (coord["x"] == 0 or (coord["x"] == (board_height-1)) or coord["y"] == 0 or (coord["y"] == (board_width-1))):
+    return True
+  else:
+    return False
+  
 #Function to manipulate the chance of a movement direction in a dict move / chance
 def change_chance_of_movement(move:[str], chance_value:[int], possible_moves_chances:[dict]) -> dict:
   if move in possible_moves_chances: 
@@ -258,6 +282,8 @@ def lower_outerline_chances(my_head: Dict[str, int],my_health: [int], board_heig
           possible_moves_chances = change_chance_of_movement("up", chancereduction ,possible_moves_chances)
           print("optimization - up would lead to outline")
   return possible_moves_chances
+
+
 
 def bad_idea_check(planned_coord: Dict[str, int], my_body: List[dict], board_height:[int], board_width:[int]) -> int: 
   return 0
@@ -315,7 +341,7 @@ def choose_move(data: dict) -> str:
 
   """Avoid to bite another snake"""
   for enemy_snake in othersnakes:
-    enemy_snake_name = enemy_snake["name"]
+    #enemy_snake_name = enemy_snake["name"]
     possible_moves = avoid_other_snakes(my_head, enemy_snake["body"], possible_moves)
     #print(f"avoided bite other snake {enemy_snake_name}")
   
@@ -330,6 +356,12 @@ def choose_move(data: dict) -> str:
     possible_moves_chances = lower_outerline_chances(my_head, my_health, board_height, board_width, possible_moves_chances)
     #print(f" {possible_moves_chances} ")
 
+  """better leave outerline if ia am on it"""
+  global own_head_outerline
+  leave_outerline_move = get_move_to_leave_outerline_if_i_am_on_it(my_head)
+  if leave_outerline_move != False:
+    print(f" better leave outerline with {leave_outerline_move}")
+    possible_moves_chances = change_chance_of_movement(leave_outerline_move, 50 ,possible_moves_chances)
   
   """check if there is a move directly to food"""
   for food_coord in food:
